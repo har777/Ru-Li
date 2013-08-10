@@ -53,6 +53,64 @@ class Env
 		else
 			@parent.set(symbol, value)
 		end
-	end		
+	end
+
+	###################Executing the eval of Lisp#######################
+
+	class Object
+		def eval(env, forms)
+			self
+		end
+
+		def consify
+			self
+		end
+
+		def arrayify
+			self
+		end
+
+		def conslist?
+			false
+		end
+	end
+
+	class Symbol
+		def eval(env, forms)
+			env.lookup(self)
+		end
+
+		def arrayify
+			self == :nil ? [] : self
+		end
+
+		def conslist?
+			self == :nil
+		end
+	end
+
+	class Array
+		def consify
+			map{|x| x.consify}.reverse.inject(:nil) {|cdr, car| Cons.new(car, cdr)}
+		end
+	end
+
+	class Cons
+		def eval(env, forms)
+			return forms.lookup(car).call(env, forms, *cdr.arrayify) if forms.defined?(car)
+			func = car.eval(env, forms)
+			return func.call(*cdr.arrayify.map{|x| x.eval(env, forms)})
+		end
+
+		def arrayify
+			return self unless conslist?
+			return [car] + cdr.arrayify
+		end
+
+		def conslist?
+			cdr.conslist?
+		end
+	end			
+
 
 end
